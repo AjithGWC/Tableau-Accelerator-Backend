@@ -164,6 +164,7 @@ app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
     }
 
     const zip = new JSZip();
+    let extractedFile = [];
 
     // Download each workbook and add to the zip file
     for (const workbook of workbooksToDownload) {
@@ -176,6 +177,7 @@ app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
         });
 
         const fileBuffer = Buffer.from(downloadResponse.data);
+        extractedFile.push(fileBuffer);
         zip.file(workbook.name, fileBuffer);
         console.log(`Successfully added: ${workbook.name}`);
       } catch (error) {
@@ -189,7 +191,7 @@ app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
     // Send the zip file to the client for download
     res.setHeader('Content-Disposition', 'attachment; filename=workbooks.zip');
     res.setHeader('Content-Type', 'application/zip');
-    res.send(zipBuffer);
+    res.send(extractedFile);
     
   } catch (error) {
     console.error('Error processing request:', error);
