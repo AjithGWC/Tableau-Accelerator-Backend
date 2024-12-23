@@ -119,83 +119,75 @@ app.post('/api/tableau/projects', async (req, res) => {
 app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
   const { username, password, instance, projects } = req.body;
 
+  if (!projects || !Array.isArray(projects) || projects.length === 0) {
+    return res.status(400).json({ error: 'Invalid or empty projects array.' });
+  }
+
   try {
     const xmlBody = `
       <tsRequest>
         <credentials name="${username}" password="${password}">
-            <site contentUrl="" />
+          <site contentUrl="" />
         </credentials>
       </tsRequest>
     `;
-    
+
     const authResponse = await axios.post(
       `https://${instance}/api/3.24/auth/signin`,
       xmlBody,
-      {
-        headers: {
-          'Content-Type': 'application/xml',
-        },
-      }
+      { headers: { 'Content-Type': 'application/xml' } }
     );
 
-    const token = authResponse.data.credentials.token;
-    console.log("Token:", token);
-
-    if (!projects || !Array.isArray(projects)) {
-      return res.status(400).json({ error: 'Invalid projects data' });
+    const token = authResponse.data.credentials?.token;
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication failed.' });
     }
 
-    const workbooksToDownload = [];
-    projects.forEach(project => {
-      if (project.workbooks && Array.isArray(project.workbooks)) {
-        project.workbooks.forEach(workbook => {
-          workbooksToDownload.push({
-            downloadUrl: workbook.downloadUrl,
-            name: workbook.workbookName.endsWith('.twb') || workbook.workbookName.endsWith('.twbx')
-              ? workbook.workbookName
-              : `${workbook.workbookName}.twbx`,
-          });
-        });
-      }
-    });
+    const workbooksToDownload = projects.flatMap((project) =>
+      project.workbooks?.map((workbook) => ({
+        downloadUrl: workbook.downloadUrl,
+        name: workbook.workbookName.endsWith('.twb') || workbook.workbookName.endsWith('.twbx')
+          ? workbook.workbookName
+          : `${workbook.workbookName}.twbx`,
+      })) || []
+    );
 
     if (workbooksToDownload.length === 0) {
-      return res.status(400).json({ error: 'No workbooks to download' });
+      return res.status(400).json({ error: 'No workbooks to download.' });
     }
 
     const zip = new JSZip();
-    let extractedFile = [];
 
-    // Download each workbook and add to the zip file
-    for (const workbook of workbooksToDownload) {
+    const downloadPromises = workbooksToDownload.map(async (workbook) => {
       try {
         const downloadResponse = await axios.get(workbook.downloadUrl, {
-          headers: {
-            'X-Tableau-Auth': token,
-          },
+          headers: { 'X-Tableau-Auth': token },
           responseType: 'arraybuffer',
         });
 
         const fileBuffer = Buffer.from(downloadResponse.data);
-        extractedFile.push(fileBuffer);
-        zip.file(workbook.name, fileBuffer);
+        zip.file(workbook.name.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_'), fileBuffer);
         console.log(`Successfully added: ${workbook.name}`);
       } catch (error) {
         console.error(`Failed to download workbook: ${workbook.name}`, error.message);
+        return workbook.name; // Return failed workbook name
       }
+    });
+
+    const failedWorkbooks = (await Promise.all(downloadPromises)).filter(Boolean);
+
+    if (failedWorkbooks.length) {
+      console.warn(`Workbooks that failed to download: ${failedWorkbooks.join(', ')}`);
     }
 
-    // Generate the zip file
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 
-    // Send the zip file to the client for download
     res.setHeader('Content-Disposition', 'attachment; filename=workbooks.zip');
     res.setHeader('Content-Type', 'application/zip');
-    res.send(extractedFile);
-    
+    res.send(zipBuffer);
   } catch (error) {
-    console.error('Error processing request:', error);
-    res.status(500).json({ error: 'Failed to download workbooks' });
+    console.error('Error processing request:', error.message);
+    res.status(500).json({ error: 'Failed to download workbooks.' });
   }
 });
 
