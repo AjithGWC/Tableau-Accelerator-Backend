@@ -139,6 +139,7 @@ app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
     );
 
     const token = authResponse.data.credentials?.token;
+    console.log("token", token);
     if (!token) {
       return res.status(401).json({ error: 'Authentication failed.' });
     }
