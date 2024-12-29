@@ -123,6 +123,7 @@ app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
     return res.status(400).json({ error: 'Invalid or empty projects array.' });
   }
 
+  console.log("2");
   try {
     const xmlBody = `
       <tsRequest>
