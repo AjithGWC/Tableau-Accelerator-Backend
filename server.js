@@ -151,6 +151,7 @@ app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
           : `${workbook.workbookName}.twbx`,
       })) || []
     );
+    console.log("workbooksToDownload", workbooksToDownload);
 
     if (workbooksToDownload.length === 0) {
       return res.status(400).json({ error: 'No workbooks to download.' });
@@ -173,6 +174,7 @@ app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
         return workbook.name; // Return failed workbook name
       }
     });
+    console.log("downloadPromises", downloadPromises);
 
     const failedWorkbooks = (await Promise.all(downloadPromises)).filter(Boolean);
 
@@ -181,6 +183,7 @@ app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
     }
 
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+    console.log("zipBuffer", zipBuffer);
 
     res.setHeader('Content-Disposition', 'attachment; filename=workbooks.zip');
     res.setHeader('Content-Type', 'application/zip');
