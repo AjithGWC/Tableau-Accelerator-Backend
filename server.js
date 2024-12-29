@@ -165,8 +165,10 @@ app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
           headers: { 'X-Tableau-Auth': token },
           responseType: 'arraybuffer',
         });
+        console.log("downloadResponse", downloadResponse);
 
         const fileBuffer = Buffer.from(downloadResponse.data);
+        console.log("fileBuffer", fileBuffer);
         zip.file(workbook.name.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_'), fileBuffer);
         console.log(`Successfully added: ${workbook.name}`);
       } catch (error) {
