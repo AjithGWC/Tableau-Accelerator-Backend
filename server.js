@@ -7,15 +7,20 @@ const cors = require('cors');
 const app = express();
 const port = 4000;
 
-app.use(cors({ origin: '*' }));
+// Allow all origins for CORS
+app.use(cors({
+  origin: '*',
+}));
 
 app.use(bodyParser.json());
 
+// Error handler function for standardized error responses
 const handleError = (res, message) => {
   console.error(message);
   res.status(500).json({ error: message });
 };
 
+// Endpoint to fetch Tableau projects
 app.post('/api/tableau/projects', async (req, res) => {
   const { username, password, instance } = req.body;
 
@@ -32,7 +37,7 @@ app.post('/api/tableau/projects', async (req, res) => {
       xmlBody,
       {
         headers: {
-          'Content-Type': 'application/xml'
+          'Content-Type': 'application/xml',
         },
       }
     );
@@ -44,8 +49,8 @@ app.post('/api/tableau/projects', async (req, res) => {
       `https://${instance}/api/3.9/sites/${siteId}/projects`,
       {
         headers: {
-          'X-Tableau-Auth': token
-        }
+          'X-Tableau-Auth': token,
+        },
       }
     );
 
@@ -59,8 +64,8 @@ app.post('/api/tableau/projects', async (req, res) => {
         `https://${instance}/api/3.24/sites/${siteId}/workbooks`,
         {
           headers: {
-            'X-Tableau-Auth': token
-          }
+            'X-Tableau-Auth': token,
+          },
         }
       );
 
@@ -77,7 +82,7 @@ app.post('/api/tableau/projects', async (req, res) => {
         webpageUrl: workbook.webpageUrl,
         createdAt: workbook.createdAt,
         updatedAt: workbook.updatedAt,
-        downloadUrl: `https://${instance}/api/3.24/sites/${siteId}/workbooks/${workbook.id}/content`
+        downloadUrl: `https://${instance}/api/3.24/sites/${siteId}/workbooks/${workbook.id}/content`,
       }));
 
       projects.forEach(project => {
@@ -96,7 +101,6 @@ app.post('/api/tableau/projects', async (req, res) => {
           }))
         });
       });
-
     } catch (error) {
       handleError(res, 'Error fetching workbooks');
       projects.forEach(project => {
@@ -114,6 +118,7 @@ app.post('/api/tableau/projects', async (req, res) => {
   }
 });
 
+// Endpoint to download workbooks as a zip file
 app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
   const { username, password, instance, projects } = req.body;
 
@@ -196,6 +201,7 @@ app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
   }
 });
 
+// Server setup
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
