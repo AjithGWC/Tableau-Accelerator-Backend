@@ -7,11 +7,7 @@ const cors = require('cors');
 const app = express();
 const port = 4000;
 
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));  
+app.use(cors({ origin: '*' }));
 
 app.use(bodyParser.json());
 
