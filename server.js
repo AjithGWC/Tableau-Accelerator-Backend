@@ -8,7 +8,8 @@ const app = express();
 const port = 4000;
 
 app.use(cors({
-    origin: '*'
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS']
 }));  
 
 app.use(bodyParser.json());
