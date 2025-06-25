@@ -207,6 +207,25 @@ app.post('/api/tableau/downloadWorkbooks', async (req, res) => {
   }
 });
 
+app.post('/api/tableau/aiGenerate', async (req, res) => {
+  try {
+    const inputPayload = req.body;
+
+    const response = await axios.post(
+      "https://gwcteq-partner.domo.com/api/ai/v1/text/generation",
+      inputPayload
+    );
+
+    res.status(200).json(response.data); // Send back only the response data
+  } catch (error) {
+    console.error("Domo API call failed:", error?.response?.data || error.message);
+    res.status(error?.response?.status || 500).json({
+      error: "Failed to generate chart type",
+      details: error?.response?.data || error.message,
+    });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
